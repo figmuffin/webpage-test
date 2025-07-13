@@ -3,49 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jane Doe - Copywriter & Content Strategist</title>
-    <link rel="stylesheet" href="style.css">
+    <title>My Projects</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for Inter font and general body styling */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5; /* Light gray background */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align to top for better content flow */
+            min-height: 100vh;
+            margin: 0;
+            padding: 2rem; /* More padding for overall content */
+        }
+    </style>
 </head>
-<body>
+<body class="antialiased">
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-2xl">
+        <h1 class="text-4xl font-bold text-center text-gray-800 mb-8">My Web Development Projects</h1>
 
-    <header>
-        <a href="index.html" class="logo">JD</a>
-        <nav>
-            <ul id="nav-menu">
-                <li><a href="index.html">Home</a></li>
-                <li><a href="about.html">About</a></li>
-                <li><a href="portfolio.html">Portfolio</a></li>
-                <li><a href="services.html">Services</a></li>
-                <li><a href="contact.html">Contact</a></li>
-            </ul>
-        </nav>
-        <button class="menu-toggle" id="menu-toggle" aria-label="Open Navigation Menu">&#9776;</button>
-    </header>
+        <p class="text-lg text-gray-700 text-center mb-10">
+            Welcome to my collection of simple web projects. Below you'll find links to various tools and pages I've built!
+        </p>
 
-    <main>
-        <section id="home">
-            <div class="container">
-                <h1>Words that Convert, Stories that Connect.</h1>
-                <p>
-                    I'm Jane Doe, a freelance copywriter specializing in creating compelling web copy, engaging blog posts, and persuasive email campaigns that drive results and build brands.
+        <div class="space-y-6">
+            <!-- Project Link: Video Time Calculator -->
+            <a href="time_calculator.html" class="block bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-6 shadow-md transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg">
+                <h2 class="text-2xl font-semibold text-blue-700 mb-2 flex items-center">
+                    <span class="mr-3 text-blue-500">⏱️</span> Video Playback Time Calculator
+                </h2>
+                <p class="text-gray-600">
+                    A handy tool to calculate the actual watch time of a video at different playback speeds, including custom speeds.
                 </p>
-                <a href="portfolio.html" class="cta-button">View My Work</a>
-                <a href="contact.html" class="cta-button secondary-cta">Get In Touch</a>
+            </a>
+
+            <!-- Placeholder for future projects -->
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-6 shadow-sm">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-2 flex items-center">
+                    <span class="mr-3 text-gray-500">💡</span> Another Project Idea
+                </h2>
+                <p class="text-gray-600">
+                    (You can add more project links here as you create them!)
+                </p>
             </div>
-        </section>
-    </main>
-    
-    <footer>
-        <div class="container">
-            <div class="social-links">
-                <a href="#" aria-label="LinkedIn Profile">LI</a> 
-                <a href="#" aria-label="Twitter Profile">TW</a>
-                <a href="#" aria-label="Medium Profile">M</a>
+
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-6 shadow-sm">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-2 flex items-center">
+                    <span class="mr-3 text-gray-500">✨</span> Coming Soon
+                </h2>
+                <p class="text-gray-600">
+                    Stay tuned for more exciting projects!
+                </p>
             </div>
-            <p>&copy; 2025 Jane Doe | Tulsa, OK</p>
         </div>
-    </footer>
-    
-    <script src="script.js"></script>
+
+        <p class="text-center text-gray-500 text-sm mt-12">
+            &copy; 2025 Your Name. All rights reserved.
+        </p>
+    </div>
 </body>
 </html>
