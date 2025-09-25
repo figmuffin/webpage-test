@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -162,8 +163,19 @@
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- DO NOT EDIT: Firebase configuration and app ID are provided externally ---
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "DEMO_API_KEY", authDomain: "DEMO_AUTH_DOMAIN", projectId: "demo-project" };
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-poll-app';
+         // --- Firebase configuration and app ID for survey-b8bf2 project ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyDSSldlSv6IiAHgp2ZNYHP5wbB-hv_TAx4",
+          authDomain: "survey-b8bf2.firebaseapp.com",
+          projectId: "survey-b8bf2",
+          storageBucket: "survey-b8bf2.firebasestorage.app",
+          messagingSenderId: "86769846025",
+          appId: "1:86769846025:web:6ae64cb5941294172135d8"
+        };
+        // The appId constant is used in your Firestore paths, make sure it matches the appId in firebaseConfig
+        const appId = firebaseConfig.appId; // Use the appId from your config directly
+        // ---
+
         // ---
 
         const app = initializeApp(firebaseConfig);
