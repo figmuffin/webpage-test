@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Poll</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Simple scrollbar styling for the poll table */
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        .tally-mark {
+            font-family: 'monospace';
+            letter-spacing: 2px;
+            color: #4a5568;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 antialiased">
+
+    <div id="app" class="container mx-auto p-4 md:p-8 max-w-7xl">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-700">Live Poll</h1>
+            <p class="text-lg text-gray-500 mt-2">Vote for your favorites and see results in real-time!</p>
+        </header>
+
+        <!-- Admin Section -->
+        <div id="admin-section" class="bg-white p-6 rounded-2xl shadow-lg mb-8">
+            <button id="toggle-admin-btn" class="w-full text-left font-bold text-xl text-gray-700 hover:text-blue-600 transition duration-300">
+                Admin Controls ❯
+            </button>
+            <div id="admin-controls" class="hidden mt-4 pt-4 border-t">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Start New Poll -->
+                    <div class="bg-gray-50 p-4 rounded-lg border">
+                        <h3 class="text-lg font-semibold mb-3">Start a New Poll</h3>
+                        <div class="mb-3">
+                            <label for="poll-title" class="block text-sm font-medium text-gray-700">Poll Title</label>
+                            <input type="text" id="poll-title" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Favorite Movie">
+                        </div>
+                        <div class="mb-3">
+                            <label for="poll-options" class="block text-sm font-medium text-gray-700">14 Poll Options (comma-separated)</label>
+                            <textarea id="poll-options" rows="5" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="Option 1, Option 2, ..."></textarea>
+                        </div>
+                        <button id="start-poll-btn" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 shadow-md">Start New Poll</button>
+                    </div>
+                    <!-- End Poll & Archive -->
+                    <div class="bg-gray-50 p-4 rounded-lg border">
+                         <h3 class="text-lg font-semibold mb-3">End Current Poll</h3>
+                         <p class="text-sm text-gray-600 mb-4">This will calculate final scores and move the poll to the "Past Polls" history. The current poll will be reset.</p>
+                        <button id="end-poll-btn" class="w-full bg-red-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-700 transition duration-300 shadow-md">End & Archive Poll</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Loading Indicator -->
+        <div id="loading" class="text-center py-10">
+            <p class="text-lg text-gray-500">Loading Poll Data...</p>
+        </div>
+
+        <!-- Main Content: Poll and Results -->
+        <div id="main-content" class="hidden">
+            <!-- Current Poll Section -->
+            <div id="current-poll-section" class="mb-8">
+                 <h2 id="current-poll-title" class="text-3xl font-bold text-center mb-6 text-gray-700"></h2>
+                
+                 <!-- Voting Form -->
+                <form id="vote-form" class="bg-white p-6 rounded-2xl shadow-lg">
+                    <p class="text-sm text-gray-600 mb-4 text-center">Select one option for each category: 1st (+3), 2nd (+2), 3rd (+1), and Worst (-1).</p>
+                    <div class="overflow-x-auto scrollbar-thin">
+                        <table class="w-full min-w-[1200px] border-collapse text-center">
+                            <thead id="poll-options-header">
+                                <!-- JS will populate this -->
+                            </thead>
+                            <tbody id="poll-options-body">
+                                <!-- JS will populate this -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="mt-6 flex flex-wrap items-center justify-between gap-4">
+                        <div class="flex-grow flex items-center gap-4">
+                            <input type="text" id="voter-name" class="flex-grow min-w-[150px] px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="Your Name (Optional)">
+                            <div class="flex items-center">
+                                <input id="anonymous-check" type="checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                <label for="anonymous-check" class="ml-2 block text-sm text-gray-900">Vote Anonymously</label>
+                            </div>
+                        </div>
+                        <button type="submit" class="bg-green-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-green-700 transition duration-300 shadow-md">Submit Vote</button>
+                    </div>
+                </form>
+            </div>
+
+             <!-- Live Results Section -->
+            <div id="results-section" class="bg-white p-6 rounded-2xl shadow-lg">
+                <h2 class="text-3xl font-bold text-center mb-6 text-gray-700">Live Results</h2>
+                <div class="overflow-x-auto scrollbar-thin">
+                    <table class="w-full min-w-[800px] text-left">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="p-3 font-semibold text-sm uppercase">Option</th>
+                                <th class="p-3 font-semibold text-sm uppercase text-center">1st</th>
+                                <th class="p-3 font-semibold text-sm uppercase text-center">2nd</th>
+                                <th class="p-3 font-semibold text-sm uppercase text-center">3rd</th>
+                                <th class="p-3 font-semibold text-sm uppercase text-center">Worst</th>
+                                <th class="p-3 font-semibold text-sm uppercase text-right">Total Score</th>
+                            </tr>
+                        </thead>
+                        <tbody id="results-body">
+                            <!-- JS will populate this -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- No Active Poll Message -->
+             <div id="no-poll-message" class="hidden text-center bg-white p-10 rounded-2xl shadow-lg">
+                <h2 class="text-2xl font-bold text-gray-700">No Active Poll</h2>
+                <p class="text-gray-500 mt-2">An admin needs to start a new poll.</p>
+            </div>
+        </div>
+
+        <!-- Past Polls Section -->
+        <div id="past-polls-section" class="mt-8 bg-white p-6 rounded-2xl shadow-lg">
+            <h2 class="text-3xl font-bold text-center mb-6 text-gray-700">Past Polls</h2>
+            <div class="mb-4">
+                <label for="past-polls-select" class="block text-sm font-medium text-gray-700">Select a poll to view its results:</label>
+                <select id="past-polls-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"></select>
+            </div>
+            <div id="past-poll-results-display" class="overflow-x-auto scrollbar-thin">
+                <!-- JS will populate this -->
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, doc, getDoc, setDoc, onSnapshot, collection, getDocs, 
+            writeBatch, query, deleteDoc 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- DO NOT EDIT: Firebase configuration and app ID are provided externally ---
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "DEMO_API_KEY", authDomain: "DEMO_AUTH_DOMAIN", projectId: "demo-project" };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-poll-app';
+        // ---
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // --- DOM Elements ---
+        const adminSection = {
+            toggleBtn: document.getElementById('toggle-admin-btn'),
+            controls: document.getElementById('admin-controls'),
+            pollTitle: document.getElementById('poll-title'),
+            pollOptions: document.getElementById('poll-options'),
+            startBtn: document.getElementById('start-poll-btn'),
+            endBtn: document.getElementById('end-poll-btn'),
+        };
+
+        const pollSection = {
+            form: document.getElementById('vote-form'),
+            title: document.getElementById('current-poll-title'),
+            optionsHeader: document.getElementById('poll-options-header'),
+            optionsBody: document.getElementById('poll-options-body'),
+            voterName: document.getElementById('voter-name'),
+            anonymousCheck: document.getElementById('anonymous-check'),
+        };
+
+        const resultsSection = {
+            body: document.getElementById('results-body'),
+        };
+        
+        const pastPollsSection = {
+            select: document.getElementById('past-polls-select'),
+            display: document.getElementById('past-poll-results-display'),
+        };
+
+        const loadingEl = document.getElementById('loading');
+        const mainContentEl = document.getElementById('main-content');
+        const noPollMessageEl = document.getElementById('no-poll-message');
+        const currentPollSectionEl = document.getElementById('current-poll-section');
+        const resultsSectionEl = document.getElementById('results-section');
+
+        // --- Firebase References ---
+        const pollConfigRef = doc(db, `/artifacts/${appId}/public/data/currentPoll/config`);
+        const votesCollectionRef = collection(db, `/artifacts/${appId}/public/data/currentPoll/config/votes`);
+        const pastPollsCollectionRef = collection(db, `/artifacts/${appId}/public/data/pastPolls`);
+
+        // --- Main Logic ---
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                console.log("User is signed in:", user.uid);
+                initializeListeners();
+            } else {
+                 try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (error) {
+                    console.error("Authentication failed:", error);
+                    alert("Could not connect to the poll service. Please refresh the page.");
+                }
+            }
+        });
+
+        function initializeListeners() {
+            onSnapshot(pollConfigRef, (docSnap) => {
+                loadingEl.style.display = 'none';
+                mainContentEl.style.display = 'block';
+
+                if (docSnap.exists() && docSnap.data().options && docSnap.data().options.length > 0) {
+                    const pollData = docSnap.data();
+                    renderPollForm(pollData.title, pollData.options);
+                    noPollMessageEl.style.display = 'none';
+                    currentPollSectionEl.style.display = 'block';
+                    resultsSectionEl.style.display = 'block';
+                } else {
+                    noPollMessageEl.style.display = 'block';
+                    currentPollSectionEl.style.display = 'none';
+                    resultsSectionEl.style.display = 'none';
+                    resultsSection.body.innerHTML = '';
+                }
+            });
+
+            onSnapshot(votesCollectionRef, (querySnapshot) => {
+                const votes = [];
+                querySnapshot.forEach((doc) => {
+                    votes.push(doc.data());
+                });
+                renderResults(votes);
+            });
+            
+            loadPastPolls();
+            setupEventListeners();
+        }
+
+        function renderPollForm(title, options) {
+            pollSection.title.textContent = title || "Current Poll";
+
+            // Header
+            let headerHTML = '<tr><th class="p-2 sticky left-0 bg-white">Category</th>';
+            options.forEach(opt => {
+                headerHTML += `<th class="p-2 font-semibold text-sm whitespace-nowrap">${opt}</th>`;
+            });
+            headerHTML += '</tr>';
+            pollSection.optionsHeader.innerHTML = headerHTML;
+
+            // Body
+            let bodyHTML = '';
+            const categories = [
+                { id: 'first', label: '1st Place (+3)', color: 'bg-yellow-100' },
+                { id: 'second', label: '2nd Place (+2)', color: 'bg-gray-200' },
+                { id: 'third', label: '3rd Place (+1)', color: 'bg-orange-200' },
+                { id: 'worst', label: 'Worst (-1)', color: 'bg-red-200' }
+            ];
+
+            categories.forEach(cat => {
+                bodyHTML += `<tr class="${cat.color}">`;
+                bodyHTML += `<td class="p-2 font-bold sticky left-0 ${cat.color} border-r">${cat.label}</td>`;
+                options.forEach(opt => {
+                    bodyHTML += `<td class="p-2"><input type="radio" name="${cat.id}" value="${opt}" class="h-5 w-5" required></td>`;
+                });
+                bodyHTML += '</tr>';
+            });
+            pollSection.optionsBody.innerHTML = bodyHTML;
+        }
+        
+        function getTallyMarks(count) {
+            if (count === 0) return '-';
+            let marks = '';
+            const fives = Math.floor(count / 5);
+            const ones = count % 5;
+            for (let i = 0; i < fives; i++) {
+                marks += '<s>||||</s> ';
+            }
+            for (let i = 0; i < ones; i++) {
+                marks += '|';
+            }
+            return marks;
+        }
+
+
+        async function renderResults(votes) {
+            const configDoc = await getDoc(pollConfigRef);
+            if (!configDoc.exists() || !configDoc.data().options) {
+                resultsSection.body.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-500">Waiting for poll to start...</td></tr>';
+                return;
+            };
+
+            const options = configDoc.data().options;
+            const scores = {};
+            options.forEach(opt => {
+                scores[opt] = { first: 0, second: 0, third: 0, worst: 0, total: 0 };
+            });
+
+            votes.forEach(vote => {
+                if (vote.first && scores[vote.first]) scores[vote.first].first++;
+                if (vote.second && scores[vote.second]) scores[vote.second].second++;
+                if (vote.third && scores[vote.third]) scores[vote.third].third++;
+                if (vote.worst && scores[vote.worst]) scores[vote.worst].worst++;
+            });
+            
+            const sortedOptions = options.slice().sort((a, b) => {
+                const scoreA = (scores[a].first * 3) + (scores[a].second * 2) + (scores[a].third * 1) - (scores[a].worst * 1);
+                const scoreB = (scores[b].first * 3) + (scores[b].second * 2) + (scores[b].third * 1) - (scores[b].worst * 1);
+                return scoreB - scoreA;
+            });
+            
+            let resultsHTML = '';
+            if (sortedOptions.length === 0) {
+                resultsHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-500">No votes yet.</td></tr>';
+            } else {
+                 sortedOptions.forEach(opt => {
+                    const s = scores[opt];
+                    const total = (s.first * 3) + (s.second * 2) + (s.third * 1) - (s.worst * 1);
+                    resultsHTML += `
+                        <tr class="border-b">
+                            <td class="p-3 font-semibold">${opt}</td>
+                            <td class="p-3 text-center tally-mark" title="${s.first} votes">${getTallyMarks(s.first)}</td>
+                            <td class="p-3 text-center tally-mark" title="${s.second} votes">${getTallyMarks(s.second)}</td>
+                            <td class="p-3 text-center tally-mark" title="${s.third} votes">${getTallyMarks(s.third)}</td>
+                            <td class="p-3 text-center tally-mark" title="${s.worst} votes">${getTallyMarks(s.worst)}</td>
+                            <td class="p-3 text-right font-bold text-lg ${total > 0 ? 'text-green-600' : total < 0 ? 'text-red-600' : ''}">${total}</td>
+                        </tr>
+                    `;
+                });
+            }
+            resultsSection.body.innerHTML = resultsHTML;
+        }
+        
+        async function loadPastPolls() {
+            const querySnapshot = await getDocs(pastPollsCollectionRef);
+            const polls = [];
+            querySnapshot.forEach(doc => {
+                polls.push({ id: doc.id, ...doc.data() });
+            });
+            
+            // Do not use orderBy, sort in memory
+            polls.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+            pastPollsSection.select.innerHTML = '<option value="">-- Select a Past Poll --</option>';
+            polls.forEach(poll => {
+                const date = poll.timestamp ? new Date(poll.timestamp.seconds * 1000).toLocaleDateString() : 'N/A';
+                pastPollsSection.select.innerHTML += `<option value="${poll.id}">${poll.title} (${date})</option>`;
+            });
+        }
+        
+        async function displayPastPollResults(pollId) {
+             if (!pollId) {
+                pastPollsSection.display.innerHTML = '';
+                return;
+            }
+            const pollDoc = await getDoc(doc(pastPollsCollectionRef, pollId));
+            if (!pollDoc.exists()) {
+                 pastPollsSection.display.innerHTML = '<p>Could not find poll data.</p>';
+                 return;
+            }
+
+            const pollData = pollDoc.data();
+            const results = pollData.results || {};
+            
+            const sortedOptions = Object.keys(results).sort((a, b) => results[b].total - results[a].total);
+
+            let tableHTML = `
+                <h3 class="text-xl font-bold mb-4">${pollData.title} - Final Results</h3>
+                <table class="w-full text-left">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="p-3 font-semibold text-sm uppercase">Option</th>
+                            <th class="p-3 font-semibold text-sm uppercase text-center">1st</th>
+                            <th class="p-3 font-semibold text-sm uppercase text-center">2nd</th>
+                            <th class="p-3 font-semibold text-sm uppercase text-center">3rd</th>
+                            <th class="p-3 font-semibold text-sm uppercase text-center">Worst</th>
+                            <th class="p-3 font-semibold text-sm uppercase text-right">Total Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+            
+            sortedOptions.forEach(opt => {
+                const res = results[opt];
+                tableHTML += `
+                    <tr class="border-b">
+                        <td class="p-3 font-semibold">${opt}</td>
+                        <td class="p-3 text-center">${res.first}</td>
+                        <td class="p-3 text-center">${res.second}</td>
+                        <td class="p-3 text-center">${res.third}</td>
+                        <td class="p-3 text-center">${res.worst}</td>
+                        <td class="p-3 text-right font-bold text-lg ${res.total > 0 ? 'text-green-600' : res.total < 0 ? 'text-red-600' : ''}">${res.total}</td>
+                    </tr>
+                `;
+            });
+            tableHTML += '</tbody></table>';
+            pastPollsSection.display.innerHTML = tableHTML;
+        }
+
+        function setupEventListeners() {
+            // Admin toggle
+            adminSection.toggleBtn.addEventListener('click', () => {
+                adminSection.controls.classList.toggle('hidden');
+                 adminSection.toggleBtn.textContent = adminSection.controls.classList.contains('hidden') ? 'Admin Controls ❯' : 'Admin Controls ❮';
+            });
+            
+            // Anonymous checkbox
+            pollSection.anonymousCheck.addEventListener('change', (e) => {
+                pollSection.voterName.disabled = e.target.checked;
+                if (e.target.checked) {
+                    pollSection.voterName.value = '';
+                }
+            });
+
+            // Start new poll
+            adminSection.startBtn.addEventListener('click', async () => {
+                const title = adminSection.pollTitle.value.trim();
+                const options = adminSection.pollOptions.value.split(',').map(s => s.trim()).filter(Boolean);
+                if (!title) {
+                    alert("Please enter a poll title.");
+                    return;
+                }
+                if (options.length !== 14) {
+                    alert("Please provide exactly 14 comma-separated options.");
+                    return;
+                }
+                
+                // The confirm() dialog is not supported in this environment.
+                // The action will proceed without confirmation.
+
+                try {
+                    // Delete all existing votes in the subcollection
+                    const votesSnapshot = await getDocs(votesCollectionRef);
+                    const batch = writeBatch(db);
+                    votesSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+                    await batch.commit();
+
+                    // Set the new poll config
+                    await setDoc(pollConfigRef, { title, options });
+                    
+                    console.log("New poll started successfully!");
+                    adminSection.pollTitle.value = '';
+                    adminSection.pollOptions.value = '';
+                } catch (e) {
+                    console.error("Error starting new poll: ", e);
+                }
+            });
+            
+            // End poll
+            adminSection.endBtn.addEventListener('click', async () => {
+                // The confirm() dialog is not supported in this environment.
+                // The action will proceed without confirmation.
+                
+                // 1. Get current poll config
+                const configDoc = await getDoc(pollConfigRef);
+                if (!configDoc.exists()) {
+                    console.log("No active poll to end.");
+                    return;
+                }
+                const { title, options } = configDoc.data();
+
+                // 2. Get all votes
+                const votesSnapshot = await getDocs(votesCollectionRef);
+                const votes = [];
+                votesSnapshot.forEach(doc => votes.push(doc.data()));
+                
+                if (votes.length === 0) {
+                   console.log("There are no votes for this poll, archiving empty poll.");
+                }
+
+                // 3. Calculate final results
+                const results = {};
+                options.forEach(opt => {
+                    results[opt] = { first: 0, second: 0, third: 0, worst: 0, total: 0 };
+                });
+                votes.forEach(vote => {
+                    if (vote.first && results[vote.first]) results[vote.first].first++;
+                    if (vote.second && results[vote.second]) results[vote.second].second++;
+                    if (vote.third && results[vote.third]) results[vote.third].third++;
+                    if (vote.worst && results[vote.worst]) results[vote.worst].worst++;
+                });
+                options.forEach(opt => {
+                     const s = results[opt];
+                     results[opt].total = (s.first * 3) + (s.second * 2) + (s.third * 1) - (s.worst * 1);
+                });
+
+                // 4. Save to pastPolls
+                const newPastPollRef = doc(pastPollsCollectionRef);
+                await setDoc(newPastPollRef, {
+                    title,
+                    results,
+                    timestamp: new Date()
+                });
+                
+                // 5. Clear current poll (delete votes subcollection and config doc)
+                 const batch = writeBatch(db);
+                 votesSnapshot.docs.forEach(d => batch.delete(d.ref));
+                 batch.delete(pollConfigRef);
+                 await batch.commit();
+
+                console.log("Poll ended and archived successfully!");
+                loadPastPolls();
+            });
+
+            // Submit vote
+            pollSection.form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const userId = auth.currentUser?.uid;
+                if (!userId) {
+                    console.error("Cannot vote: User not authenticated.");
+                    // In a real app, you'd show a user-friendly message here.
+                    return;
+                }
+
+                const formData = new FormData(pollSection.form);
+                const voteData = {
+                    first: formData.get('first'),
+                    second: formData.get('second'),
+                    third: formData.get('third'),
+                    worst: formData.get('worst'),
+                    voterName: pollSection.anonymousCheck.checked ? "Anonymous" : pollSection.voterName.value.trim() || "Anonymous",
+                    createdAt: new Date()
+                };
+
+                const selections = [voteData.first, voteData.second, voteData.third, voteData.worst];
+                const uniqueSelections = new Set(selections);
+
+                if (uniqueSelections.size !== 4) {
+                    console.error("User must select a different option for each category.");
+                    // In a real app, you'd show a user-friendly message here instead of an alert.
+                    return;
+                }
+
+                try {
+                    const userVoteRef = doc(db, `/artifacts/${appId}/public/data/currentPoll/config/votes`, userId);
+                    await setDoc(userVoteRef, voteData);
+                    pollSection.form.reset();
+                    pollSection.voterName.disabled = false;
+                } catch(err) {
+                    console.error("Error submitting vote:", err);
+                }
+            });
+            
+            // Past polls select change
+            pastPollsSection.select.addEventListener('change', (e) => {
+                displayPastPollResults(e.target.value);
+            });
+        }
+
+    </script>
+</body>
+</html>
+
+
